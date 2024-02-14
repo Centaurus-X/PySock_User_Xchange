@@ -33,6 +33,7 @@ def load_config():
     config.read(CONFIG_FILE)
     return config['SERVER']['IP'], int(config['SERVER']['PORT'])
 
+
 def connect_to_server(ip, port):
     while True:
         try:
@@ -43,6 +44,7 @@ def connect_to_server(ip, port):
         except Exception as e:
             logger.error(f"Verbindungsfehler: {e}")
             time.sleep(5)
+
 
 def send_token_and_receive_data(ip, port):
     client_socket = None
@@ -65,8 +67,31 @@ def send_token_and_receive_data(ip, port):
             client_socket = None  # Setzt client_socket zurück, um erneute Verbindung zu initiieren
             time.sleep(5)  # Wartezeit vor dem erneuten Verbindungsversuch
 
+
+def authenticate_and_login():
+    # Hier implementieren wir die Legitimations- und Anmelde-Logik
+    # Diese Funktion wird im neuen Thread ausgeführt
+    logger.info("Legitimation gestartet.")
+    # Befehl zum Ausführen der T2med-Anwendung mit Administratorrechten
+    cmd = "runas /user:Administrator /savecred \"C:\\Path\\to\\T2med.exe\""  # Ersetzen Sie "C:\\Path\\to\\T2med.exe" durch den tatsächlichen Pfad zur T2med-Anwendung
+    subprocess.Popen(cmd, shell=True)  # Führt den Befehl aus
+
+
+def listen_for_hotkey():
+    # Diese Funktion wird im Hauptthread ausgeführt und hört auf die Tastenkombination
+    while True:
+        if keyboard.is_pressed("ctrl+alt+r"):
+            logger.info("Tastenkombination erkannt. Legitimation wird gestartet.")
+            threading.Thread(target=authenticate_and_login).start()
+            time.sleep(1)  # Um mehrfaches Auslösen der Tastenkombination zu verhindern
+
+
 if __name__ == "__main__":
     server_ip, server_port = load_config()
+    # Starten Sie den Thread, der auf die Tastenkombination hört
+    threading.Thread(target=listen_for_hotkey).start()
+    # Starten Sie den Thread, der die Kommunikation mit dem Server übernimmt
     threading.Thread(target=send_token_and_receive_data, args=(server_ip, server_port)).start()
+
 
 
